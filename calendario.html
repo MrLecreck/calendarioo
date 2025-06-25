@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calendario Colorido</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fceabb 0%, #f8b500 100%);
+      --day-bg: #ffffffaa;
+      --accent: #ff6f61;
+      --accent-dark: #d94b4b;
+      --text: #333;
+      --done: #888;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text);
+    }
+
+    h1 {
+      text-align: center;
+      color: #fff;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      max-width: 750px;
+      margin: 2rem auto;
+    }
+
+    .day {
+      background: var(--day-bg);
+      border-radius: 15px;
+      padding: 1.5rem 0;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #444;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease, background 0.3s ease;
+    }
+
+    .day:hover {
+      background-color: var(--accent);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .objectives {
+      max-width: 500px;
+      margin: 2rem auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 1.5rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .objectives h2 {
+      margin-top: 0;
+      text-align: center;
+      color: var(--accent-dark);
+    }
+
+    ul {
+      padding-left: 0;
+      list-style: none;
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    li span {
+      flex: 1;
+      font-size: 1rem;
+    }
+
+    .done {
+      text-decoration: line-through;
+      color: var(--done);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin-top: 0.5rem;
+      margin-left: 0.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background-color: var(--accent-dark);
+    }
+
+    .actions button {
+      margin-left: 8px;
+      font-size: 0.85rem;
+      padding: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+      .calendar {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>📅 Calendario con Objetivos</h1>
+
+<div class="calendar" id="calendar"></div>
+
+<div class="objectives" id="objectives" style="display:none;">
+  <h2>🎯 Objetivos del <span id="selectedDate"></span></h2>
+  <ul id="taskList"></ul>
+  <input type="text" id="taskInput" placeholder="Escribe un objetivo...">
+  <button onclick="addTask()">➕ Agregar</button>
+</div>
+
+<script>
+  const calendar = document.getElementById('calendar');
+  const objectivesDiv = document.getElementById('objectives');
+  const selectedDateSpan = document.getElementById('selectedDate');
+  const taskList = document.getElementById('taskList');
+  const taskInput = document.getElementById('taskInput');
+  let selectedDate = null;
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const div = document.createElement('div');
+    div.className = 'day';
+    div.textContent = day;
+    div.onclick = () => openDay(day);
+    calendar.appendChild(div);
+  }
+
+  function openDay(day) {
+    selectedDate = `${year}-${month + 1}-${day}`;
+    selectedDateSpan.textContent = selectedDate;
+    taskInput.value = '';
+    objectivesDiv.style.display = 'block';
+    loadTasks();
+  }
+
+  function addTask() {
+    const text = taskInput.value.trim();
+    if (text === '') return;
+    const tasks = getTasks();
+    tasks.push({ text, done: false });
+    saveTasks(tasks);
+    taskInput.value = '';
+    loadTasks();
+  }
+
+  function getTasks() {
+    return JSON.parse(localStorage.getItem(selectedDate) || '[]');
+  }
+
+  function saveTasks(tasks) {
+    localStorage.setItem(selectedDate, JSON.stringify(tasks));
+  }
+
+  function loadTasks() {
+    const tasks = getTasks();
+    taskList.innerHTML = '';
+    tasks.forEach((task, i) => {
+      const li = document.createElement('li');
+
+      const span = document.createElement('span');
+      span.textContent = task.text;
+      if (task.done) span.classList.add('done');
+      li.appendChild(span);
+
+      const actions = document.createElement('div');
+      actions.classList.add('actions');
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.textContent = task.done ? '❌' : '✅';
+      toggleBtn.onclick = () => toggleTask(i);
+      actions.appendChild(toggleBtn);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '🗑';
+      deleteBtn.onclick = () => deleteTask(i);
+      actions.appendChild(deleteBtn);
+
+      li.appendChild(actions);
+      taskList.appendChild(li);
+    });
+  }
+
+  function toggleTask(index) {
+    const tasks = getTasks();
+    tasks[index].done = !tasks[index].done;
+    saveTasks(tasks);
+    loadTasks();
+  }
+
+  function deleteTask(index) {
+    const tasks = getTasks();
+    tasks.splice(index, 1);
+    saveTasks(tasks);
+    loadTasks();
+  }
+</script>
+
+</body>
+</html>
